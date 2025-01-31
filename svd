@@ -1,0 +1,46 @@
+import pandas as pd
+import numpy as np
+import tensorflow as tf
+
+# 加载数据集
+df_X = pd.read_csv('cbc2.csv', index_col=False, keep_default_na=False)
+X_matrix = df_X.iloc[0:498, 0:20].to_numpy()
+
+# 标准化数据
+scaling_factor = 10
+X_normalized = (X_matrix - np.mean(X_matrix)) / np.std(X_matrix)
+X = tf.constant(X_normalized * scaling_factor, dtype=tf.float32)
+
+# 读取目标数据
+df_f = pd.read_csv('f2.csv', index_col=False, keep_default_na=False)
+f_matrix = df_f.iloc[0:498, 0:20].to_numpy()
+f = tf.constant(f_matrix, dtype=tf.float32)
+
+# 第 1 步：对 X 执行 SVD
+S, U, Vt = tf.linalg.svd(X)
+
+# 第 2 步：计算 X 的伪倒数
+# X 的伪逆计算公式为 V * S_inv * U^T
+# 其中 S_inv 是奇异值倒数的对角矩阵
+# 为 S_inv 创建对角矩阵
+S_inv = tf.linalg.diag(tf.where(S > 1e-10, 1.0 / S, 0.0))# 避免除以零
+# 计算 X 的伪逆
+X_pseudo_inverse = tf.matmul(Vt, tf.matmul(S_inv, U, transpose_b=True))
+
+# 第 3 步：计算 Q
+Q = tf.matmul(X_pseudo_inverse, f)
+
+# # 打印结果
+print("Q:")
+print(Q)
+
+hat_f = tf.matmul(X,Q).numpy()
+
+# Print the result
+print("Final Predictions (hat_f):")
+print(hat_f)
+
+# Calculate Mean Squared Error (MSE)
+mse = np.mean(np.square(f.numpy() - hat_f))
+print("\nMean Squared Error (MSE):")
+print(mse)
