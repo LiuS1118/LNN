@@ -1,0 +1,50 @@
+import numpy as np
+import pandas as pd
+
+# 为每个特征定义范围
+ranges = [
+    (4.5, 11.0), (20, 40), (3.5, 15), (55, 75), (1.0, 3.5),
+    (0.2, 1.0), (1.5, 8.0), (3.78, 5.25), (11, 15), (36, 53),
+    (80, 102), (27, 34), (32, 36), (38, 48), (12, 17),
+    (150, 378), (6.7, 10), (8.3, 14.1), (0, 0.05), (17.5, 42.3)
+]
+
+# 初始化一个空列表来保存列数据
+data = []
+# 为每个特征列生成数据
+for min_val, max_val in ranges:
+    # 半数数据应在范围内
+    within_range = np.random.uniform(low=min_val, high=max_val, size=5000)
+    
+    # 一半数据应在范围之外
+    # 随机选择低于 min_val 还是高于 max_val
+    below_or_above = np.random.choice(['below', 'above'], size=5000)
+    
+    # 生成范围之外的数据
+    below_min = np.random.uniform(low=min_val - 5, high=min_val, size=5000)
+    above_max = np.random.uniform(low=max_val, high=max_val + 5, size=5000)
+    
+    outside_range = np.where(below_or_above == 'below', below_min, above_max)
+    
+    # 合并范围内和范围外数据
+    column_data = np.concatenate([within_range, outside_range])
+    
+    # 洗牌数据，混合范围内和范围外的值
+    np.random.shuffle(column_data)
+    
+    # 将列数据添加到列表中
+    data.append(column_data)
+
+# 将列表转换为 NumPy 数组，并进行转置以匹配所需的形状
+A_matrix = np.array(data).T
+
+# 创建一个 DataFrame，以便更好地进行可视化
+df_A = pd.DataFrame(A_matrix, columns=[f"Feature_{i+1}" for i in range(A_matrix.shape[1])])
+
+# 保存为 CSV（可选）
+df_A.to_csv('reconstructed_A_matrix.csv', index=False)
+
+
+# 打印形状和数据以确认大小和内容
+print("Shape of A_matrix:", A_matrix.shape)
+print(A_matrix)
